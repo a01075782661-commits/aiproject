@@ -1,226 +1,212 @@
 
 import streamlit as st
-import pandas as pd
-from urllib.parse import quote
+import folium
+from streamlit_folium import st_folium
 
+# 페이지 설정
 st.set_page_config(
-    page_title="Seoul Explorer",
+    page_title="Seoul Tourism Map",
     page_icon="🗺️",
     layout="wide"
 )
 
-# 서울 관광지 데이터
+# 제목
+st.title("🗺️ Discover Seoul")
+st.subheader("서울의 인기 관광지 TOP 10")
+st.write(
+    "서울을 방문하는 외국인 관광객을 위한 주요 관광지를 소개합니다."
+)
+
+# 관광지 데이터
 places = [
     {
-        "rank": 1, "name": "명동", "english": "Myeong-dong",
-        "lat": 37.5636, "lon": 126.9850,
-        "category": "쇼핑 · K-뷰티",
-        "description": "화장품 매장, 패션 숍, 길거리 음식과 다양한 쇼핑을 즐길 수 있는 서울 대표 관광 거리예요.",
-        "why": "외국인 방문객이 많이 찾는 대표 쇼핑 지역이에요.",
-        "visitors": "일평균 약 100,910명"
+        "name": "명동",
+        "english": "Myeongdong",
+        "lat": 37.5636,
+        "lon": 126.9869,
+        "description": "쇼핑과 K-뷰티, 길거리 음식으로 유명한 서울의 대표 관광지입니다.",
+        "category": "쇼핑"
     },
     {
-        "rank": 2, "name": "N서울타워", "english": "N Seoul Tower",
-        "lat": 37.5512, "lon": 126.9882,
-        "category": "전망 · 랜드마크",
-        "description": "남산 정상 부근에 있는 서울의 대표 전망 명소예요.",
-        "why": "서울의 상징적인 랜드마크예요.",
-        "visitors": "일평균 약 57,370명"
+        "name": "N서울타워",
+        "english": "N Seoul Tower",
+        "lat": 37.5512,
+        "lon": 126.9882,
+        "description": "서울의 아름다운 전경을 감상할 수 있는 대표적인 전망 명소입니다.",
+        "category": "전망"
     },
     {
-        "rank": 3, "name": "삼성역 · 코엑스", "english": "Samseong Station · COEX",
-        "lat": 37.5125, "lon": 127.0590,
-        "category": "쇼핑 · 문화",
-        "description": "별마당도서관, 쇼핑몰, 아쿠아리움 등이 모여 있는 복합 문화 공간이에요.",
-        "why": "쇼핑과 문화 체험을 한 번에 즐길 수 있어요.",
-        "visitors": "일평균 약 46,813명"
+        "name": "코엑스",
+        "english": "COEX",
+        "lat": 37.5125,
+        "lon": 127.0588,
+        "description": "대형 쇼핑몰과 별마당도서관이 있는 복합문화공간입니다.",
+        "category": "쇼핑·문화"
     },
     {
-        "rank": 4, "name": "강남역 일대", "english": "Gangnam Station",
-        "lat": 37.4979, "lon": 127.0276,
-        "category": "쇼핑 · 트렌드",
-        "description": "패션 매장, 음식점, 카페가 모여 있는 활기찬 거리예요.",
-        "why": "서울의 현대적인 도시 분위기를 경험하기 좋아요.",
-        "visitors": "일평균 약 41,210명"
+        "name": "강남역",
+        "english": "Gangnam Station",
+        "lat": 37.4979,
+        "lon": 127.0276,
+        "description": "다양한 상점과 음식점, 카페가 모여 있는 활기찬 거리입니다.",
+        "category": "쇼핑·문화"
     },
     {
-        "rank": 5, "name": "홍대", "english": "Hongdae",
-        "lat": 37.5563, "lon": 126.9236,
-        "category": "문화 · 공연",
-        "description": "거리 공연, 음악, 예술과 개성 있는 상점이 있는 지역이에요.",
-        "why": "한국의 대중문화와 거리 예술을 경험하기 좋아요.",
-        "visitors": "일평균 약 40,213명"
+        "name": "홍대",
+        "english": "Hongdae",
+        "lat": 37.5563,
+        "lon": 126.9236,
+        "description": "거리 공연과 음악, 패션, 예술을 즐길 수 있는 젊음의 거리입니다.",
+        "category": "문화·예술"
     },
     {
-        "rank": 6, "name": "경복궁", "english": "Gyeongbokgung Palace",
-        "lat": 37.5796, "lon": 126.9770,
-        "category": "역사 · 전통문화",
-        "description": "조선 왕조의 대표 궁궐로 아름다운 전통 건축을 볼 수 있어요.",
-        "why": "한국의 역사와 전통문화를 체험하기 좋아요."
+        "name": "경복궁",
+        "english": "Gyeongbokgung Palace",
+        "lat": 37.5796,
+        "lon": 126.9770,
+        "description": "조선 왕조의 대표 궁궐로 한국의 전통문화를 경험할 수 있습니다.",
+        "category": "역사·문화"
     },
     {
-        "rank": 7, "name": "북촌한옥마을", "english": "Bukchon Hanok Village",
-        "lat": 37.5826, "lon": 126.9830,
-        "category": "전통 · 거리 풍경",
-        "description": "전통 한옥이 모여 있어 서울의 옛 골목 풍경을 느낄 수 있어요.",
-        "why": "한국의 전통 주거 문화를 경험할 수 있어요.",
-        "notice": "주민이 거주하는 공간이므로 조용히 관람해 주세요."
+        "name": "북촌한옥마을",
+        "english": "Bukchon Hanok Village",
+        "lat": 37.5826,
+        "lon": 126.9830,
+        "description": "전통 한옥이 모여 있는 아름다운 마을입니다. 주민들을 배려해 방문해야 합니다.",
+        "category": "전통·문화"
     },
     {
-        "rank": 8, "name": "광장시장", "english": "Gwangjang Market",
-        "lat": 37.5701, "lon": 126.9997,
-        "category": "전통시장 · 음식",
-        "description": "빈대떡, 김밥 등 다양한 한국 음식을 즐길 수 있는 전통시장이에요.",
-        "why": "한국의 시장 문화와 먹거리를 경험하기 좋아요."
+        "name": "광장시장",
+        "english": "Gwangjang Market",
+        "lat": 37.5701,
+        "lon": 126.9997,
+        "description": "빈대떡과 마약김밥 등 다양한 한국 전통 음식을 맛볼 수 있습니다.",
+        "category": "음식"
     },
     {
-        "rank": 9, "name": "동대문디자인플라자", "english": "Dongdaemun Design Plaza",
-        "lat": 37.5671, "lon": 127.0095,
-        "category": "건축 · 디자인",
-        "description": "독특한 건축물과 전시, 디자인 행사가 열리는 문화 공간이에요.",
-        "why": "현대적인 건축과 디자인을 즐길 수 있어요."
+        "name": "동대문디자인플라자",
+        "english": "Dongdaemun Design Plaza",
+        "lat": 37.5674,
+        "lon": 127.0095,
+        "description": "독특한 건축물과 전시, 디자인 행사를 즐길 수 있는 공간입니다.",
+        "category": "건축·문화"
     },
     {
-        "rank": 10, "name": "남대문시장", "english": "Namdaemun Market",
-        "lat": 37.5592, "lon": 126.9777,
-        "category": "전통시장 · 쇼핑",
-        "description": "오랜 역사를 가진 전통시장으로 다양한 상품과 먹거리가 있어요.",
-        "why": "한국의 전통시장과 쇼핑 문화를 경험할 수 있어요."
+        "name": "남대문시장",
+        "english": "Namdaemun Market",
+        "lat": 37.5592,
+        "lon": 126.9777,
+        "description": "다양한 상품과 먹거리를 판매하는 서울의 대표 전통시장입니다.",
+        "category": "쇼핑·음식"
     }
 ]
 
-# 디자인
-st.markdown("""
-<style>
-.stApp {
-    background: linear-gradient(180deg, #F1F5FF 0%, #FFFFFF 55%);
-}
-.hero {
-    text-align: center;
-    padding: 12px 0;
-}
-.hero h1 {
-    color: #304A88;
-    font-size: 38px;
-    font-weight: 850;
-}
-.hero p {
-    color: #5D6980;
-    font-size: 17px;
-}
-.place-card {
-    background: white;
-    border: 1px solid #DCE4F2;
-    border-radius: 15px;
-    padding: 18px;
-    margin: 8px 0;
-}
-</style>
-""", unsafe_allow_html=True)
+# 사이드바
+st.sidebar.header("🔎 관광지 검색")
 
-# 메인 화면
-st.markdown("""
-<div class="hero">
-<h1>🗺️ SEOUL EXPLORER 🇰🇷</h1>
-<p>외국인 여행객을 위한 서울 인기 관광지 TOP 10</p>
-</div>
-""", unsafe_allow_html=True)
+place_names = [place["name"] for place in places]
 
-st.info("📍 지도에서 관광지 위치를 확인하고 원하는 장소를 선택해 보세요!")
-
-df = pd.DataFrame(places)
-
-map_col, info_col = st.columns([1.65, 1], gap="large")
-
-# 지도
-with map_col:
-    st.subheader("📌 서울 관광 지도")
-
-    st.map(
-        df,
-        latitude="lat",
-        longitude="lon",
-        color="#E4572E",
-        size=100,
-        zoom=11,
-        use_container_width=True
-    )
-
-    st.caption("지도 위의 점을 눌러 위치를 확인할 수 있어요.")
-
-# 관광지 정보
-with info_col:
-    st.subheader("🔎 관광지 자세히 보기")
-
-    options = [
-        f'{p["rank"]:02d}. {p["name"]} ({p["english"]})'
-        for p in places
-    ]
-
-    selected = st.selectbox(
-        "관광지를 선택하세요!",
-        options
-    )
-
-    p = places[options.index(selected)]
-
-    st.markdown('<div class="place-card">', unsafe_allow_html=True)
-
-    st.subheader(f"⭐ {p['rank']}위 · {p['name']}")
-    st.write(f"🌎 영어 이름: {p['english']}")
-    st.write(f"🏷️ 테마: {p['category']}")
-
-    st.markdown("### 📝 관광지 소개")
-    st.write(p["description"])
-
-    st.markdown("### 💡 추천 이유")
-    st.write(p["why"])
-
-    if p.get("visitors"):
-        st.metric("2025년 일평균 외국인 유동인구", p["visitors"])
-
-    if p.get("notice"):
-        st.warning("🙏 관람 에티켓: " + p["notice"])
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    query = quote(p["english"] + ", Seoul, South Korea")
-
-    st.link_button(
-        "🧭 Google Maps 길찾기",
-        "https://www.google.com/maps/search/?api=1&query=" + query,
-        use_container_width=True
-    )
-
-# 전체 관광지 목록
-st.markdown("---")
-st.subheader("🏙️ 서울 관광지 TOP 10")
-
-for start in range(0, len(places), 2):
-    cols = st.columns(2)
-
-    for col, p in zip(cols, places[start:start + 2]):
-        with col:
-            st.markdown(f"""
-            <div class="place-card">
-                <b>#{p['rank']} · {p['name']}</b><br>
-                <small>{p['english']} · {p['category']}</small><br><br>
-                {p['description']}
-            </div>
-            """, unsafe_allow_html=True)
-
-# 하단 설명
-st.markdown("---")
-st.subheader("📊 데이터 안내")
-
-st.write("""
-1~5위는 서울시의 2025년 외국인 일평균 유동인구 상위 지역 순서를 반영했어요.
-6~10위는 서울의 대표적인 관광 명소를 추가한 추천 순위예요.
-공식적인 전체 관광지 통합 순위는 아닙니다.
-""")
-
-st.markdown(
-    "📚 참고 자료: [서울시 외국인 관광객 분석](https://english.seoul.go.kr/from-k-culture-to-k-hiking-foreign-tourists-venture-beyond-seouls-top-attractions/)"
+selected_name = st.sidebar.selectbox(
+    "관광지를 선택하세요",
+    place_names
 )
 
-st.caption("※ 방문객 수는 추정치이며 실시간 관광객 수가 아닙니다.")
+selected_place = next(
+    place for place in places
+    if place["name"] == selected_name
+)
+
+# 선택한 관광지 정보
+st.sidebar.markdown("---")
+st.sidebar.subheader("📍 선택한 관광지")
+st.sidebar.write(f"**이름:** {selected_place['name']}")
+st.sidebar.write(f"**영문명:** {selected_place['english']}")
+st.sidebar.write(f"**종류:** {selected_place['category']}")
+st.sidebar.write(selected_place["description"])
+
+# Google 지도 링크
+google_map_url = (
+    "https://www.google.com/maps/search/?api=1&query="
+    f"{selected_place['lat']},{selected_place['lon']}"
+)
+
+st.sidebar.link_button(
+    "Google 지도에서 보기",
+    google_map_url
+)
+
+# 지도 생성
+seoul_map = folium.Map(
+    location=[
+        selected_place["lat"],
+        selected_place["lon"]
+    ],
+    zoom_start=12,
+    tiles="OpenStreetMap"
+)
+
+# 관광지 마커 추가
+for place in places:
+
+    # 선택한 관광지는 빨간색, 나머지는 파란색
+    if place["name"] == selected_name:
+        marker_color = "red"
+    else:
+        marker_color = "blue"
+
+    # 마커 팝업 내용
+    popup_html = f"""
+    <div style="width:220px;">
+        <h4>{place['name']}</h4>
+        <p><b>{place['english']}</b></p>
+        <p>{place['description']}</p>
+        <p>분류: {place['category']}</p>
+    </div>
+    """
+
+    folium.Marker(
+        location=[place["lat"], place["lon"]],
+        popup=folium.Popup(popup_html, max_width=300),
+        tooltip=place["name"],
+        icon=folium.Icon(
+            color=marker_color,
+            icon="info-sign"
+        )
+    ).add_to(seoul_map)
+
+# 지도 표시
+st.markdown("### 📌 서울 주요 관광지 지도")
+
+st_folium(
+    seoul_map,
+    width=None,
+    height=600,
+    use_container_width=True
+)
+
+# 관광지 목록
+st.markdown("---")
+st.markdown("### 🏙️ 서울 관광지 TOP 10")
+
+# 2열로 관광지 정보 표시
+col1, col2 = st.columns(2)
+
+for index, place in enumerate(places):
+
+    target_col = col1 if index % 2 == 0 else col2
+
+    with target_col:
+        with st.container(border=True):
+            st.markdown(
+                f"**{index + 1}. {place['name']}**"
+            )
+            st.caption(place["english"])
+            st.write(place["description"])
+            st.caption(f"분류: {place['category']}")
+
+# 안내
+st.markdown("---")
+st.caption(
+    "※ 관광지 목록은 서울의 대표적인 명소를 소개하기 위한 편집 목록이며, "
+    "공식적인 외국인 방문객 순위는 아닙니다."
+)
